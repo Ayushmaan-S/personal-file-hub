@@ -4,6 +4,6 @@ python-multipart
 python-dotenv
 supabase
 python-jose[cryptography]
-passlib[bcrypt]
-bcrypt
+passlib
+bcrypt==5.0.0
 pydantic
