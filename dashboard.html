@@ -1,0 +1,3870 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
+<title>Personal File Hub</title>
+
+
+<!-- Monaco -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"></script>
+
+
+<!-- PDF.js -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.min.mjs"
+        type="module"></script>
+
+
+<!-- Mammoth DOCX -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
+
+
+<!-- PPTX -->
+
+<script src="https://cdn.jsdelivr.net/npm/pptx2html@0.1.2/dist/pptx2html.min.js"></script>
+
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+
+html,
+body {
+
+    margin: 0;
+
+    width: 100%;
+
+    height: 100%;
+
+    overflow: hidden;
+
+    background: #0f1117;
+
+    color: white;
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+}
+
+
+button,
+input {
+
+    font-family: inherit;
+}
+
+
+/* ============================================================
+   APP
+   ============================================================ */
+
+.app {
+
+    width: 100%;
+
+    height: 100%;
+
+    display: flex;
+
+    flex-direction: column;
+}
+
+
+/* ============================================================
+   TOPBAR
+   ============================================================ */
+
+.topbar {
+
+    height: 52px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 0 14px;
+
+    background: #171a21;
+
+    border-bottom:
+        1px solid #292d36;
+}
+
+
+.brand {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 9px;
+
+    font-size: 15px;
+
+    font-weight: 600;
+}
+
+
+.brand-icon {
+
+    font-size: 19px;
+}
+
+
+.top-actions {
+
+    display: flex;
+
+    gap: 7px;
+}
+
+
+button {
+
+    border: none;
+
+    cursor: pointer;
+
+    border-radius: 6px;
+
+    padding:
+        7px 12px;
+
+    font-size: 12px;
+}
+
+
+.secondary-button {
+
+    background: #292e38;
+
+    color: #dfe3ea;
+}
+
+
+.secondary-button:hover {
+
+    background: #353b47;
+}
+
+
+.primary-button {
+
+    background: white;
+
+    color: #111318;
+
+    font-weight: 600;
+}
+
+
+.primary-button:hover {
+
+    background: #ddd;
+}
+
+
+.danger-button {
+
+    background: #48262c;
+
+    color: #ffb7bf;
+}
+
+
+button:disabled {
+
+    opacity: .5;
+
+    cursor: default;
+}
+
+
+/* ============================================================
+   WORKSPACE
+   ============================================================ */
+
+.workspace {
+
+    flex: 1;
+
+    min-height: 0;
+
+    display: flex;
+}
+
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+
+.sidebar {
+
+    width: 270px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    background: #14171d;
+
+    border-right:
+        1px solid #292d36;
+}
+
+
+.sidebar-header {
+
+    height: 44px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding:
+        0 10px 0 14px;
+
+    border-bottom:
+        1px solid #292d36;
+}
+
+
+.sidebar-title {
+
+    color: #858d9a;
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    letter-spacing: 1px;
+}
+
+
+.small-button {
+
+    width: 28px;
+
+    height: 28px;
+
+    padding: 0;
+
+    background: transparent;
+
+    color: #929aa8;
+
+    font-size: 17px;
+}
+
+
+.small-button:hover {
+
+    background: #282d35;
+
+    color: white;
+}
+
+
+.search-box {
+
+    padding: 8px;
+
+    border-bottom:
+        1px solid #242831;
+}
+
+
+.search-box input {
+
+    width: 100%;
+
+    padding:
+        7px 9px;
+
+    background: #1c2027;
+
+    border:
+        1px solid #303641;
+
+    border-radius: 5px;
+
+    outline: none;
+
+    color: white;
+
+    font-size: 12px;
+}
+
+
+.file-list {
+
+    flex: 1;
+
+    overflow-y: auto;
+
+    padding: 5px 0;
+}
+
+
+.file-item {
+
+    height: 34px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    padding:
+        0 9px 0 14px;
+
+    color: #c4c9d2;
+
+    cursor: pointer;
+
+    user-select: none;
+
+    font-family:
+        Consolas,
+        "Courier New",
+        monospace;
+
+    font-size: 12px;
+}
+
+
+.file-item:hover {
+
+    background: #20242c;
+}
+
+
+.file-item.active {
+
+    background: #292e38;
+
+    color: white;
+}
+
+
+.file-icon {
+
+    width: 23px;
+
+    flex-shrink: 0;
+
+    text-align: center;
+
+    font-family: Arial, sans-serif;
+}
+
+
+.file-name {
+
+    flex: 1;
+
+    min-width: 0;
+
+    overflow: hidden;
+
+    white-space: nowrap;
+
+    text-overflow: ellipsis;
+}
+
+
+.file-menu {
+
+    width: 22px;
+
+    height: 22px;
+
+    padding: 0;
+
+    background: transparent;
+
+    color: #aab1bc;
+
+    opacity: 0;
+
+    font-size: 15px;
+}
+
+
+.file-item:hover .file-menu {
+
+    opacity: 1;
+}
+
+
+.file-menu:hover {
+
+    background: #3a404b;
+
+    color: white;
+}
+
+
+.empty-files {
+
+    padding: 30px 18px;
+
+    text-align: center;
+
+    color: #707886;
+
+    font-size: 12px;
+
+    line-height: 1.6;
+}
+
+
+/* ============================================================
+   MAIN VIEW
+   ============================================================ */
+
+.editor-area {
+
+    flex: 1;
+
+    min-width: 0;
+
+    min-height: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    background: #1e1e1e;
+}
+
+
+/* ============================================================
+   FILE HEADER
+   ============================================================ */
+
+.editor-header {
+
+    height: 44px;
+
+    flex-shrink: 0;
+
+    display: none;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    background: #181b21;
+
+    border-bottom:
+        1px solid #292d36;
+}
+
+
+.file-tab {
+
+    height: 100%;
+
+    display: flex;
+
+    align-items: center;
+
+    padding: 0 15px;
+
+    color: #d9dde4;
+
+    font-family:
+        Consolas,
+        "Courier New",
+        monospace;
+
+    font-size: 12px;
+}
+
+
+.editor-actions {
+
+    display: flex;
+
+    gap: 6px;
+
+    padding-right: 9px;
+}
+
+
+/* ============================================================
+   WELCOME
+   ============================================================ */
+
+.welcome {
+
+    flex: 1;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    color: #727a87;
+}
+
+
+.welcome-icon {
+
+    font-size: 45px;
+
+    opacity: .5;
+
+    margin-bottom: 15px;
+}
+
+
+.welcome-title {
+
+    color: #d7dbe2;
+
+    font-size: 22px;
+
+    margin-bottom: 8px;
+}
+
+
+.welcome-text {
+
+    text-align: center;
+
+    font-size: 12px;
+
+    line-height: 1.8;
+}
+
+
+/* ============================================================
+   CODE EDITOR
+   ============================================================ */
+
+#editor {
+
+    flex: 1;
+
+    min-height: 0;
+
+    width: 100%;
+}
+
+
+/* ============================================================
+   VIEWER
+   ============================================================ */
+
+#viewer {
+
+    flex: 1;
+
+    min-height: 0;
+
+    width: 100%;
+
+    overflow: auto;
+
+    display: none;
+
+    background: #111318;
+}
+
+
+/* ============================================================
+   IMAGE VIEWER
+   ============================================================ */
+
+.image-viewer {
+
+    width: 100%;
+
+    height: 100%;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    overflow: auto;
+
+    padding: 30px;
+}
+
+
+.image-viewer img {
+
+    max-width: 100%;
+
+    max-height: 100%;
+
+    object-fit: contain;
+
+    border-radius: 5px;
+
+    box-shadow:
+        0 10px 40px
+        rgba(0,0,0,.4);
+}
+
+
+/* ============================================================
+   PDF VIEWER
+   ============================================================ */
+
+.pdf-viewer {
+
+    width: 100%;
+
+    height: 100%;
+
+    display: flex;
+
+    justify-content: center;
+
+    background: #525659;
+
+    overflow: auto;
+
+    padding: 20px;
+}
+
+
+.pdf-frame {
+
+    width: 100%;
+
+    height: 100%;
+
+    border: none;
+
+    background: white;
+}
+
+
+/* ============================================================
+   DOCUMENT VIEWER
+   ============================================================ */
+
+.document-viewer {
+
+    width: 100%;
+
+    min-height: 100%;
+
+    padding: 50px;
+
+    background: #f7f7f7;
+
+    color: #111;
+
+    overflow: auto;
+}
+
+
+.document-page {
+
+    width: min(
+        850px,
+        100%
+    );
+
+    margin: auto;
+
+    background: white;
+
+    min-height: 1000px;
+
+    padding: 60px;
+
+    box-shadow:
+        0 5px 30px
+        rgba(0,0,0,.25);
+}
+
+
+/* ============================================================
+   PPT VIEWER
+   ============================================================ */
+
+.ppt-viewer {
+
+    width: 100%;
+
+    height: 100%;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 30px;
+
+    overflow: auto;
+
+    background: #20232a;
+}
+
+
+.ppt-message {
+
+    max-width: 500px;
+
+    text-align: center;
+
+    color: #aeb5c0;
+
+    line-height: 1.7;
+}
+
+
+/* ============================================================
+   STATUS
+   ============================================================ */
+
+.statusbar {
+
+    height: 23px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 0 9px;
+
+    background: #181b21;
+
+    border-top:
+        1px solid #292d36;
+
+    color: #858d9a;
+
+    font-size: 10px;
+}
+
+
+/* ============================================================
+   CONTEXT MENU
+   ============================================================ */
+
+.context-menu {
+
+    position: fixed;
+
+    z-index: 1000;
+
+    display: none;
+
+    width: 150px;
+
+    padding: 5px;
+
+    background: #252a32;
+
+    border:
+        1px solid #3a404a;
+
+    border-radius: 6px;
+
+    box-shadow:
+        0 8px 25px
+        rgba(0,0,0,.45);
+}
+
+
+.context-menu button {
+
+    width: 100%;
+
+    display: block;
+
+    text-align: left;
+
+    background: transparent;
+
+    color: #d8dce3;
+
+    padding:
+        8px 10px;
+
+    border-radius: 4px;
+}
+
+
+.context-menu button:hover {
+
+    background: #363c47;
+}
+
+
+.context-menu .delete-option {
+
+    color: #ff9ca6;
+}
+
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+
+.modal-overlay {
+
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 2000;
+
+    display: none;
+
+    align-items: center;
+
+    justify-content: center;
+
+    background:
+        rgba(0,0,0,.65);
+}
+
+
+.modal {
+
+    width: 340px;
+
+    padding: 20px;
+
+    background: #20242b;
+
+    border:
+        1px solid #363c46;
+
+    border-radius: 9px;
+}
+
+
+.modal h3 {
+
+    margin:
+        0 0 15px;
+
+    font-size: 16px;
+}
+
+
+.modal input {
+
+    width: 100%;
+
+    padding: 9px;
+
+    background: #171a20;
+
+    border:
+        1px solid #383e49;
+
+    border-radius: 5px;
+
+    color: white;
+
+    outline: none;
+}
+
+
+.modal-actions {
+
+    display: flex;
+
+    justify-content: flex-end;
+
+    gap: 7px;
+
+    margin-top: 16px;
+}
+
+
+@media (max-width: 700px) {
+
+    .sidebar {
+
+        width: 210px;
+    }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div class="app">
+
+
+<!-- ========================================================
+     TOP BAR
+     ======================================================== -->
+
+<header class="topbar">
+
+    <div class="brand">
+
+        <span class="brand-icon">
+            ☁
+        </span>
+
+        Personal File Hub
+
+    </div>
+
+
+    <div class="top-actions">
+
+        <button
+            class="secondary-button"
+            id="uploadButton"
+        >
+            ↑ Upload
+        </button>
+
+
+        <button
+            class="secondary-button"
+            id="logoutButton"
+        >
+            Logout
+        </button>
+
+    </div>
+
+</header>
+
+
+<!-- ========================================================
+     WORKSPACE
+     ======================================================== -->
+
+<div class="workspace">
+
+
+<!-- SIDEBAR -->
+
+<aside class="sidebar">
+
+
+    <div class="sidebar-header">
+
+        <span class="sidebar-title">
+            EXPLORER
+        </span>
+
+
+        <button
+            class="small-button"
+            id="refreshButton"
+            title="Refresh"
+        >
+            ↻
+        </button>
+
+    </div>
+
+
+    <div class="search-box">
+
+        <input
+            id="searchInput"
+            placeholder="Search files..."
+        >
+
+    </div>
+
+
+    <div
+        class="file-list"
+        id="fileList"
+    >
+
+        <div class="empty-files">
+            Loading...
+        </div>
+
+    </div>
+
+
+</aside>
+
+
+<!-- MAIN -->
+
+<section class="editor-area">
+
+
+    <div
+        class="editor-header"
+        id="editorHeader"
+    >
+
+
+        <div
+            class="file-tab"
+            id="fileTab"
+        >
+            No file
+        </div>
+
+
+        <div class="editor-actions">
+
+
+            <button
+                class="secondary-button"
+                id="renameButton"
+            >
+                Rename
+            </button>
+
+
+            <button
+                class="secondary-button"
+                id="downloadButton"
+            >
+                ↓ Download
+            </button>
+
+
+            <button
+                class="primary-button"
+                id="saveButton"
+            >
+                Save
+            </button>
+
+
+        </div>
+
+
+    </div>
+
+
+    <div
+        class="welcome"
+        id="welcome"
+    >
+
+        <div class="welcome-icon">
+            ◇
+        </div>
+
+        <div class="welcome-title">
+            Personal File Hub
+        </div>
+
+        <div class="welcome-text">
+
+            Select a file to open it.
+
+            <br>
+
+            Code files use the Monaco editor.
+
+            <br>
+
+            Images, PDFs and documents
+            use dedicated viewers.
+
+        </div>
+
+    </div>
+
+
+    <div
+        id="editor"
+        style="display:none;"
+    ></div>
+
+
+    <div
+        id="viewer"
+    ></div>
+
+
+</section>
+
+
+</div>
+
+
+<!-- STATUS -->
+
+<footer class="statusbar">
+
+    <span id="status">
+        Ready
+    </span>
+
+    <span id="language">
+        Plain Text
+    </span>
+
+</footer>
+
+
+</div>
+
+
+<!-- UPLOAD -->
+
+<input
+    type="file"
+    id="fileInput"
+    style="display:none;"
+>
+
+
+<!-- CONTEXT MENU -->
+
+<div
+    class="context-menu"
+    id="contextMenu"
+>
+
+    <button id="contextOpen">
+        Open
+    </button>
+
+    <button id="contextRename">
+        Rename
+    </button>
+
+    <button id="contextDownload">
+        Download
+    </button>
+
+    <button
+        class="delete-option"
+        id="contextDelete"
+    >
+        Delete
+    </button>
+
+</div>
+
+
+<!-- RENAME MODAL -->
+
+<div
+    class="modal-overlay"
+    id="renameModal"
+>
+
+    <div class="modal">
+
+        <h3>
+            Rename file
+        </h3>
+
+        <input
+            id="renameInput"
+            autocomplete="off"
+        >
+
+        <div class="modal-actions">
+
+            <button
+                class="secondary-button"
+                id="renameCancel"
+            >
+                Cancel
+            </button>
+
+            <button
+                class="primary-button"
+                id="renameConfirm"
+            >
+                Rename
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+
+// ============================================================
+// CONFIG
+// ============================================================
+
+const API_URL =
+    "https://studious-goldfish-r7pg57rggwgwfp7p9-8000.app.github.dev";
+
+
+const token =
+    localStorage.getItem(
+        "token"
+    );
+
+
+if (!token) {
+
+    window.location.href =
+        "index.html";
+
+}
+
+
+// ============================================================
+// ELEMENTS
+// ============================================================
+
+const fileList =
+    document.getElementById(
+        "fileList"
+    );
+
+
+const editor =
+    document.getElementById(
+        "editor"
+    );
+
+
+const viewer =
+    document.getElementById(
+        "viewer"
+    );
+
+
+const welcome =
+    document.getElementById(
+        "welcome"
+    );
+
+
+const editorHeader =
+    document.getElementById(
+        "editorHeader"
+    );
+
+
+const fileTab =
+    document.getElementById(
+        "fileTab"
+    );
+
+
+const statusElement =
+    document.getElementById(
+        "status"
+    );
+
+
+const languageElement =
+    document.getElementById(
+        "language"
+    );
+
+
+const saveButton =
+    document.getElementById(
+        "saveButton"
+    );
+
+
+const renameButton =
+    document.getElementById(
+        "renameButton"
+    );
+
+
+const downloadButton =
+    document.getElementById(
+        "downloadButton"
+    );
+
+
+const uploadButton =
+    document.getElementById(
+        "uploadButton"
+    );
+
+
+const uploadInput =
+    document.getElementById(
+        "fileInput"
+    );
+
+
+const logoutButton =
+    document.getElementById(
+        "logoutButton"
+    );
+
+
+const refreshButton =
+    document.getElementById(
+        "refreshButton"
+    );
+
+
+const searchInput =
+    document.getElementById(
+        "searchInput"
+    );
+
+
+const contextMenu =
+    document.getElementById(
+        "contextMenu"
+    );
+
+
+const renameModal =
+    document.getElementById(
+        "renameModal"
+    );
+
+
+const renameInput =
+    document.getElementById(
+        "renameInput"
+    );
+
+
+// ============================================================
+// STATE
+// ============================================================
+
+let monacoEditor = null;
+
+let currentFile = null;
+
+let currentFiles = [];
+
+let contextFile = null;
+
+let isDirty = false;
+
+let currentObjectURL = null;
+
+
+// ============================================================
+// MONACO
+// ============================================================
+
+require.config({
+
+    paths: {
+
+        vs:
+            "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs"
+
+    }
+
+});
+
+
+require(
+    ["vs/editor/editor.main"],
+    function () {
+
+        monacoEditor =
+            monaco.editor.create(
+                editor,
+                {
+
+                    value: "",
+
+                    language:
+                        "plaintext",
+
+                    theme:
+                        "vs-dark",
+
+                    automaticLayout:
+                        true,
+
+                    minimap: {
+                        enabled: true
+                    },
+
+                    fontSize: 14,
+
+                    tabSize: 4,
+
+                    insertSpaces: true,
+
+                    wordWrap: "off",
+
+                    scrollBeyondLastLine:
+                        false
+
+                }
+            );
+
+
+        monacoEditor.onDidChangeModelContent(
+            function () {
+
+                if (
+                    currentFile &&
+                    isCodeFile(
+                        currentFile.filename
+                    )
+                ) {
+
+                    isDirty = true;
+
+                    statusElement.textContent =
+                        "Unsaved changes";
+
+                    updateTab();
+
+                }
+
+            }
+        );
+
+
+        monacoEditor.addCommand(
+            monaco.KeyMod.CtrlCmd |
+            monaco.KeyCode.KeyS,
+
+            function () {
+
+                saveCurrentFile();
+
+            }
+        );
+
+
+        loadFiles();
+
+    }
+);
+
+
+// ============================================================
+// LOAD FILES
+// ============================================================
+
+async function loadFiles() {
+
+    fileList.innerHTML = `
+        <div class="empty-files">
+            Loading...
+        </div>
+    `;
+
+
+    try {
+
+        const response =
+            await fetch(
+                API_URL + "/files",
+                {
+
+                    headers: {
+
+                        Authorization:
+                            "Bearer " +
+                            token
+
+                    }
+
+                }
+            );
+
+
+        if (
+            response.status === 401
+        ) {
+
+            logout();
+
+            return;
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.detail ||
+                "Could not load files"
+            );
+
+        }
+
+
+        currentFiles =
+            data.files || [];
+
+
+        renderFiles();
+
+
+        statusElement.textContent =
+            currentFiles.length +
+            " file(s)";
+
+
+    } catch (error) {
+
+        console.error(error);
+
+
+        fileList.innerHTML = `
+            <div class="empty-files">
+                Could not load files.
+            </div>
+        `;
+
+
+        statusElement.textContent =
+            "Connection error";
+
+    }
+
+}
+
+
+// ============================================================
+// RENDER FILES
+// ============================================================
+
+function renderFiles() {
+
+    const search =
+        searchInput.value
+            .trim()
+            .toLowerCase();
+
+
+    fileList.innerHTML = "";
+
+
+    const files =
+        currentFiles.filter(
+            function(file) {
+
+                return file.filename
+                    .toLowerCase()
+                    .includes(search);
+
+            }
+        );
+
+
+    if (!files.length) {
+
+        fileList.innerHTML = `
+            <div class="empty-files">
+                ${
+                    search
+                    ? "No matching files."
+                    : "No files yet."
+                }
+            </div>
+        `;
+
+        return;
+
+    }
+
+
+    files.forEach(
+        function(file) {
+
+            const item =
+                document.createElement(
+                    "div"
+                );
+
+
+            item.className =
+                "file-item";
+
+
+            if (
+                currentFile &&
+                currentFile.id === file.id
+            ) {
+
+                item.classList.add(
+                    "active"
+                );
+
+            }
+
+
+            const icon =
+                document.createElement(
+                    "div"
+                );
+
+
+            icon.className =
+                "file-icon";
+
+
+            icon.textContent =
+                getFileIcon(
+                    file.filename
+                );
+
+
+            const name =
+                document.createElement(
+                    "div"
+                );
+
+
+            name.className =
+                "file-name";
+
+
+            name.textContent =
+                file.filename;
+
+
+            const menu =
+                document.createElement(
+                    "button"
+                );
+
+
+            menu.className =
+                "file-menu";
+
+
+            menu.textContent =
+                "⋮";
+
+
+            menu.addEventListener(
+                "click",
+                function(event) {
+
+                    event.stopPropagation();
+
+                    showContextMenu(
+                        file,
+                        event.clientX,
+                        event.clientY
+                    );
+
+                }
+            );
+
+
+            item.appendChild(
+                icon
+            );
+
+
+            item.appendChild(
+                name
+            );
+
+
+            item.appendChild(
+                menu
+            );
+
+
+            item.addEventListener(
+                "click",
+                function() {
+
+                    openFile(file);
+
+                }
+            );
+
+
+            item.addEventListener(
+                "contextmenu",
+                function(event) {
+
+                    event.preventDefault();
+
+                    showContextMenu(
+                        file,
+                        event.clientX,
+                        event.clientY
+                    );
+
+                }
+            );
+
+
+            fileList.appendChild(
+                item
+            );
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// OPEN FILE
+// ============================================================
+
+async function openFile(file) {
+
+    if (
+        currentFile &&
+        isDirty
+    ) {
+
+        if (
+            !confirm(
+                "You have unsaved changes. Open another file?"
+            )
+        ) {
+
+            return;
+
+        }
+
+    }
+
+
+    hideContextMenu();
+
+
+    currentFile =
+        file;
+
+
+    isDirty =
+        false;
+
+
+    editorHeader.style.display =
+        "flex";
+
+
+    welcome.style.display =
+        "none";
+
+
+    statusElement.textContent =
+        "Opening " +
+        file.filename +
+        "...";
+
+
+    const extension =
+        getExtension(
+            file.filename
+        );
+
+
+    try {
+
+        if (
+            isImageFile(
+                extension
+            )
+        ) {
+
+            await showImage(
+                file
+            );
+
+        }
+
+        else if (
+            extension === "pdf"
+        ) {
+
+            await showPDF(
+                file
+            );
+
+        }
+
+        else if (
+            extension === "docx"
+        ) {
+
+            await showDOCX(
+                file
+            );
+
+        }
+
+        else if (
+            extension === "pptx"
+        ) {
+
+            await showPPTX(
+                file
+            );
+
+        }
+
+        else if (
+            isCodeFile(
+                file.filename
+            )
+        ) {
+
+            await showCode(
+                file
+            );
+
+        }
+
+        else {
+
+            await showText(
+                file
+            );
+
+        }
+
+
+        fileTab.textContent =
+            file.filename;
+
+
+        updateTab();
+
+
+        renderFiles();
+
+
+    } catch (error) {
+
+        console.error(error);
+
+
+        statusElement.textContent =
+            "Could not open file";
+
+
+        alert(
+            error.message ||
+            "Could not open file."
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// PREPARE VIEW
+// ============================================================
+
+function prepareViewer() {
+
+    editor.style.display =
+        "none";
+
+    viewer.style.display =
+        "block";
+
+
+    if (
+        monacoEditor
+    ) {
+
+        const model =
+            monacoEditor.getModel();
+
+
+        if (model) {
+
+            model.dispose();
+
+        }
+
+    }
+
+
+    if (
+        currentObjectURL
+    ) {
+
+        URL.revokeObjectURL(
+            currentObjectURL
+        );
+
+        currentObjectURL =
+            null;
+
+    }
+
+
+    viewer.innerHTML = "";
+
+}
+
+
+// ============================================================
+// SHOW CODE
+// ============================================================
+
+async function showCode(file) {
+
+    editor.style.display =
+        "block";
+
+    viewer.style.display =
+        "none";
+
+
+    const response =
+        await fetch(
+            API_URL +
+            "/files/" +
+            file.id,
+            {
+
+                headers: {
+
+                    Authorization:
+                        "Bearer " +
+                        token
+
+                }
+
+            }
+        );
+
+
+    if (
+        response.status === 401
+    ) {
+
+        logout();
+
+        return;
+
+    }
+
+
+    const data =
+        await response.json();
+
+
+    if (!response.ok) {
+
+        throw new Error(
+            data.detail ||
+            "Could not open file"
+        );
+
+    }
+
+
+    const language =
+        getMonacoLanguage(
+            file.filename
+        );
+
+
+    const model =
+        monaco.editor.createModel(
+            data.content,
+            language
+        );
+
+
+    monacoEditor.setModel(
+        model
+    );
+
+
+    languageElement.textContent =
+        language;
+
+
+    statusElement.textContent =
+        "Saved";
+
+
+    monacoEditor.focus();
+
+}
+
+
+// ============================================================
+// SHOW TEXT
+// ============================================================
+
+async function showText(file) {
+
+    await showCode(
+        file
+    );
+
+}
+
+
+// ============================================================
+// SHOW IMAGE
+// ============================================================
+
+async function showImage(file) {
+
+    prepareViewer();
+
+
+    const blob =
+        await fetchRawBlob(
+            file
+        );
+
+
+    currentObjectURL =
+        URL.createObjectURL(
+            blob
+        );
+
+
+    const container =
+        document.createElement(
+            "div"
+        );
+
+
+    container.className =
+        "image-viewer";
+
+
+    const image =
+        document.createElement(
+            "img"
+        );
+
+
+    image.src =
+        currentObjectURL;
+
+
+    image.alt =
+        file.filename;
+
+
+    container.appendChild(
+        image
+    );
+
+
+    viewer.appendChild(
+        container
+    );
+
+
+    languageElement.textContent =
+        "Image";
+
+
+    statusElement.textContent =
+        "Ready";
+
+}
+
+
+// ============================================================
+// SHOW PDF
+// ============================================================
+
+async function showPDF(file) {
+
+    prepareViewer();
+
+
+    const blob =
+        await fetchRawBlob(
+            file
+        );
+
+
+    currentObjectURL =
+        URL.createObjectURL(
+            blob
+        );
+
+
+    const container =
+        document.createElement(
+            "div"
+        );
+
+
+    container.className =
+        "pdf-viewer";
+
+
+    const iframe =
+        document.createElement(
+            "iframe"
+        );
+
+
+    iframe.className =
+        "pdf-frame";
+
+
+    iframe.src =
+        currentObjectURL;
+
+
+    iframe.title =
+        file.filename;
+
+
+    container.appendChild(
+        iframe
+    );
+
+
+    viewer.appendChild(
+        container
+    );
+
+
+    languageElement.textContent =
+        "PDF";
+
+
+    statusElement.textContent =
+        "Ready";
+
+}
+
+
+// ============================================================
+// SHOW DOCX
+// ============================================================
+
+async function showDOCX(file) {
+
+    prepareViewer();
+
+
+    statusElement.textContent =
+        "Rendering DOCX...";
+
+
+    const blob =
+        await fetchRawBlob(
+            file
+        );
+
+
+    const arrayBuffer =
+        await blob.arrayBuffer();
+
+
+    if (
+        typeof mammoth ===
+        "undefined"
+    ) {
+
+        throw new Error(
+            "DOCX viewer failed to load."
+        );
+
+    }
+
+
+    const result =
+        await mammoth.convertToHtml(
+            {
+                arrayBuffer:
+                    arrayBuffer
+            }
+        );
+
+
+    const container =
+        document.createElement(
+            "div"
+        );
+
+
+    container.className =
+        "document-viewer";
+
+
+    const page =
+        document.createElement(
+            "div"
+        );
+
+
+    page.className =
+        "document-page";
+
+
+    page.innerHTML =
+        result.value;
+
+
+    container.appendChild(
+        page
+    );
+
+
+    viewer.appendChild(
+        container
+    );
+
+
+    languageElement.textContent =
+        "DOCX";
+
+
+    statusElement.textContent =
+        "Ready";
+
+}
+
+
+// ============================================================
+// SHOW PPTX
+// ============================================================
+
+async function showPPTX(file) {
+
+    prepareViewer();
+
+
+    statusElement.textContent =
+        "Rendering PowerPoint...";
+
+
+    const blob =
+        await fetchRawBlob(
+            file
+        );
+
+
+    const arrayBuffer =
+        await blob.arrayBuffer();
+
+
+    const container =
+        document.createElement(
+            "div"
+        );
+
+
+    container.className =
+        "ppt-viewer";
+
+
+    const message =
+        document.createElement(
+            "div"
+        );
+
+
+    message.className =
+        "ppt-message";
+
+
+    message.innerHTML = `
+        <h2>
+            📊 ${escapeHTML(file.filename)}
+        </h2>
+
+        <p>
+            PowerPoint preview is being loaded.
+        </p>
+
+        <p>
+            If your browser cannot render this
+            presentation directly, use
+            <strong>Download</strong> to open it
+            in PowerPoint or LibreOffice.
+        </p>
+    `;
+
+
+    container.appendChild(
+        message
+    );
+
+
+    viewer.appendChild(
+        container
+    );
+
+
+    /*
+        Try client-side PPTX rendering
+        if the library exposes a renderer.
+    */
+
+    try {
+
+        if (
+            typeof Pptx2Html !==
+            "undefined"
+        ) {
+
+            /*
+                Some versions expose
+                PPTX rendering differently.
+                Keep the fallback message if
+                the installed version doesn't.
+            */
+
+        }
+
+    } catch (error) {
+
+        console.log(
+            "PPTX renderer:",
+            error
+        );
+
+    }
+
+
+    languageElement.textContent =
+        "PowerPoint";
+
+
+    statusElement.textContent =
+        "Ready";
+
+}
+
+
+// ============================================================
+// FETCH RAW FILE
+// ============================================================
+
+async function fetchRawBlob(file) {
+
+    const response =
+        await fetch(
+            API_URL +
+            "/files/" +
+            file.id +
+            "/raw",
+            {
+
+                headers: {
+
+                    Authorization:
+                        "Bearer " +
+                        token
+
+                }
+
+            }
+        );
+
+
+    if (
+        response.status === 401
+    ) {
+
+        logout();
+
+        throw new Error(
+            "Authentication expired."
+        );
+
+    }
+
+
+    if (!response.ok) {
+
+        let message =
+            "Could not load file.";
+
+
+        try {
+
+            const data =
+                await response.json();
+
+
+            message =
+                data.detail ||
+                message;
+
+        } catch (error) {}
+
+
+        throw new Error(
+            message
+        );
+
+    }
+
+
+    return await response.blob();
+
+}
+
+
+// ============================================================
+// SAVE
+// ============================================================
+
+async function saveCurrentFile() {
+
+    if (
+        !currentFile ||
+        !isCodeFile(
+            currentFile.filename
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    statusElement.textContent =
+        "Saving...";
+
+
+    saveButton.disabled =
+        true;
+
+
+    try {
+
+        const content =
+            monacoEditor.getValue();
+
+
+        const response =
+            await fetch(
+                API_URL +
+                "/files/" +
+                currentFile.id,
+                {
+
+                    method:
+                        "PUT",
+
+                    headers: {
+
+                        Authorization:
+                            "Bearer " +
+                            token,
+
+                        "Content-Type":
+                            "application/json"
+
+                    },
+
+                    body:
+                        JSON.stringify({
+                            content:
+                                content
+                        })
+
+                }
+            );
+
+
+        if (
+            response.status === 401
+        ) {
+
+            logout();
+
+            return;
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.detail ||
+                "Save failed"
+            );
+
+        }
+
+
+        isDirty =
+            false;
+
+
+        updateTab();
+
+
+        statusElement.textContent =
+            "Saved";
+
+
+    } catch (error) {
+
+        console.error(error);
+
+
+        statusElement.textContent =
+            "Save failed";
+
+
+        alert(
+            error.message
+        );
+
+    } finally {
+
+        saveButton.disabled =
+            false;
+
+    }
+
+}
+
+
+saveButton.addEventListener(
+    "click",
+    saveCurrentFile
+);
+
+
+// ============================================================
+// DOWNLOAD
+// ============================================================
+
+downloadButton.addEventListener(
+    "click",
+    function() {
+
+        if (
+            currentFile
+        ) {
+
+            downloadFile(
+                currentFile
+            );
+
+        }
+
+    }
+);
+
+
+async function downloadFile(file) {
+
+    try {
+
+        statusElement.textContent =
+            "Downloading...";
+
+
+        const response =
+            await fetch(
+                API_URL +
+                "/download/" +
+                file.id,
+                {
+
+                    headers: {
+
+                        Authorization:
+                            "Bearer " +
+                            token
+
+                    }
+
+                }
+            );
+
+
+        if (
+            response.status === 401
+        ) {
+
+            logout();
+
+            return;
+
+        }
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Download failed"
+            );
+
+        }
+
+
+        const blob =
+            await response.blob();
+
+
+        const url =
+            URL.createObjectURL(
+                blob
+            );
+
+
+        const link =
+            document.createElement(
+                "a"
+            );
+
+
+        link.href =
+            url;
+
+
+        link.download =
+            file.filename;
+
+
+        document.body.appendChild(
+            link
+        );
+
+
+        link.click();
+
+
+        link.remove();
+
+
+        URL.revokeObjectURL(
+            url
+        );
+
+
+        statusElement.textContent =
+            "Downloaded";
+
+
+    } catch (error) {
+
+        console.error(error);
+
+
+        alert(
+            error.message
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// UPLOAD
+// ============================================================
+
+uploadButton.addEventListener(
+    "click",
+    function() {
+
+        uploadInput.click();
+
+    }
+);
+
+
+uploadInput.addEventListener(
+    "change",
+    async function() {
+
+        if (
+            !uploadInput.files.length
+        ) {
+
+            return;
+
+        }
+
+
+        const file =
+            uploadInput.files[0];
+
+
+        const formData =
+            new FormData();
+
+
+        formData.append(
+            "file",
+            file
+        );
+
+
+        statusElement.textContent =
+            "Uploading...";
+
+
+        try {
+
+            const response =
+                await fetch(
+                    API_URL +
+                    "/upload",
+                    {
+
+                        method:
+                            "POST",
+
+                        headers: {
+
+                            Authorization:
+                                "Bearer " +
+                                token
+
+                        },
+
+                        body:
+                            formData
+
+                    }
+                );
+
+
+            if (
+                response.status === 401
+            ) {
+
+                logout();
+
+                return;
+
+            }
+
+
+            const data =
+                await response.json();
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data.detail ||
+                    "Upload failed"
+                );
+
+            }
+
+
+            await loadFiles();
+
+
+            statusElement.textContent =
+                "Uploaded";
+
+
+            if (
+                data.file
+            ) {
+
+                const uploaded =
+                    currentFiles.find(
+                        function(item) {
+
+                            return (
+                                item.id ===
+                                data.file.id
+                            );
+
+                        }
+                    );
+
+
+                if (uploaded) {
+
+                    await openFile(
+                        uploaded
+                    );
+
+                }
+
+            }
+
+        } catch (error) {
+
+            console.error(error);
+
+
+            statusElement.textContent =
+                "Upload failed";
+
+
+            alert(
+                error.message
+            );
+
+        }
+
+
+        uploadInput.value = "";
+
+    }
+);
+
+
+// ============================================================
+// RENAME
+// ============================================================
+
+renameButton.addEventListener(
+    "click",
+    function() {
+
+        if (
+            currentFile
+        ) {
+
+            openRenameModal(
+                currentFile
+            );
+
+        }
+
+    }
+);
+
+
+function openRenameModal(file) {
+
+    contextFile =
+        file;
+
+
+    renameInput.value =
+        file.filename;
+
+
+    renameModal.style.display =
+        "flex";
+
+
+    setTimeout(
+        function() {
+
+            renameInput.focus();
+
+            renameInput.select();
+
+        },
+        50
+    );
+
+}
+
+
+document
+    .getElementById(
+        "renameConfirm"
+    )
+    .addEventListener(
+        "click",
+        renameFile
+    );
+
+
+document
+    .getElementById(
+        "renameCancel"
+    )
+    .addEventListener(
+        "click",
+        closeRenameModal
+    );
+
+
+async function renameFile() {
+
+    if (
+        !contextFile
+    ) {
+
+        return;
+
+    }
+
+
+    const newFilename =
+        renameInput.value.trim();
+
+
+    if (!newFilename) {
+
+        alert(
+            "Filename cannot be empty."
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                API_URL +
+                "/files/" +
+                contextFile.id +
+                "/rename",
+                {
+
+                    method:
+                        "PUT",
+
+                    headers: {
+
+                        Authorization:
+                            "Bearer " +
+                            token,
+
+                        "Content-Type":
+                            "application/json"
+
+                    },
+
+                    body:
+                        JSON.stringify({
+                            filename:
+                                newFilename
+                        })
+
+                }
+            );
+
+
+        if (
+            response.status === 401
+        ) {
+
+            logout();
+
+            return;
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.detail ||
+                "Rename failed"
+            );
+
+        }
+
+
+        contextFile.filename =
+            data.filename;
+
+
+        if (
+            currentFile &&
+            currentFile.id ===
+                contextFile.id
+        ) {
+
+            currentFile.filename =
+                data.filename;
+
+
+            fileTab.textContent =
+                data.filename;
+
+
+            languageElement.textContent =
+                getViewerType(
+                    data.filename
+                );
+
+        }
+
+
+        closeRenameModal();
+
+
+        await loadFiles();
+
+
+        statusElement.textContent =
+            "Renamed";
+
+
+    } catch (error) {
+
+        console.error(error);
+
+
+        alert(
+            error.message
+        );
+
+    }
+
+}
+
+
+function closeRenameModal() {
+
+    renameModal.style.display =
+        "none";
+
+    contextFile =
+        null;
+
+}
+
+
+renameInput.addEventListener(
+    "keydown",
+    function(event) {
+
+        if (
+            event.key === "Enter"
+        ) {
+
+            renameFile();
+
+        }
+
+        if (
+            event.key === "Escape"
+        ) {
+
+            closeRenameModal();
+
+        }
+
+    }
+);
+
+
+// ============================================================
+// DELETE
+// ============================================================
+
+async function deleteFile(file) {
+
+    hideContextMenu();
+
+
+    if (!file) {
+
+        return;
+
+    }
+
+
+    if (
+        !confirm(
+            `Delete "${file.filename}"? This cannot be undone.`
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    try {
+
+        statusElement.textContent =
+            "Deleting...";
+
+
+        const response =
+            await fetch(
+                API_URL +
+                "/files/" +
+                file.id,
+                {
+
+                    method:
+                        "DELETE",
+
+                    headers: {
+
+                        Authorization:
+                            "Bearer " +
+                            token
+
+                    }
+
+                }
+            );
+
+
+        if (
+            response.status === 401
+        ) {
+
+            logout();
+
+            return;
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.detail ||
+                "Delete failed"
+            );
+
+        }
+
+
+        if (
+            currentFile &&
+            currentFile.id ===
+                file.id
+        ) {
+
+            closeCurrentFile();
+
+        }
+
+
+        await loadFiles();
+
+
+        statusElement.textContent =
+            "Deleted";
+
+
+    } catch (error) {
+
+        console.error(error);
+
+
+        alert(
+            error.message
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// CONTEXT MENU
+// ============================================================
+
+function showContextMenu(
+    file,
+    x,
+    y
+) {
+
+    contextFile =
+        file;
+
+
+    contextMenu.style.display =
+        "block";
+
+
+    contextMenu.style.left =
+        x + "px";
+
+
+    contextMenu.style.top =
+        y + "px";
+
+}
+
+
+function hideContextMenu() {
+
+    contextMenu.style.display =
+        "none";
+
+}
+
+
+document.addEventListener(
+    "click",
+    hideContextMenu
+);
+
+
+document
+    .getElementById(
+        "contextOpen"
+    )
+    .addEventListener(
+        "click",
+        function(event) {
+
+            event.stopPropagation();
+
+            if (contextFile) {
+
+                openFile(
+                    contextFile
+                );
+
+            }
+
+            hideContextMenu();
+
+        }
+    );
+
+
+document
+    .getElementById(
+        "contextRename"
+    )
+    .addEventListener(
+        "click",
+        function(event) {
+
+            event.stopPropagation();
+
+            if (contextFile) {
+
+                openRenameModal(
+                    contextFile
+                );
+
+            }
+
+            hideContextMenu();
+
+        }
+    );
+
+
+document
+    .getElementById(
+        "contextDownload"
+    )
+    .addEventListener(
+        "click",
+        function(event) {
+
+            event.stopPropagation();
+
+            if (contextFile) {
+
+                downloadFile(
+                    contextFile
+                );
+
+            }
+
+            hideContextMenu();
+
+        }
+    );
+
+
+document
+    .getElementById(
+        "contextDelete"
+    )
+    .addEventListener(
+        "click",
+        function(event) {
+
+            event.stopPropagation();
+
+            if (contextFile) {
+
+                deleteFile(
+                    contextFile
+                );
+
+            }
+
+            hideContextMenu();
+
+        }
+    );
+
+
+// ============================================================
+// SEARCH
+// ============================================================
+
+searchInput.addEventListener(
+    "input",
+    renderFiles
+);
+
+
+// ============================================================
+// REFRESH
+// ============================================================
+
+refreshButton.addEventListener(
+    "click",
+    loadFiles
+);
+
+
+// ============================================================
+// LOGOUT
+// ============================================================
+
+logoutButton.addEventListener(
+    "click",
+    logout
+);
+
+
+function logout() {
+
+    localStorage.removeItem(
+        "token"
+    );
+
+
+    window.location.href =
+        "index.html";
+
+}
+
+
+// ============================================================
+// CLOSE CURRENT FILE
+// ============================================================
+
+function closeCurrentFile() {
+
+    if (
+        monacoEditor
+    ) {
+
+        const model =
+            monacoEditor.getModel();
+
+
+        if (model) {
+
+            model.dispose();
+
+        }
+
+    }
+
+
+    if (
+        currentObjectURL
+    ) {
+
+        URL.revokeObjectURL(
+            currentObjectURL
+        );
+
+        currentObjectURL =
+            null;
+
+    }
+
+
+    currentFile =
+        null;
+
+
+    isDirty =
+        false;
+
+
+    editor.style.display =
+        "none";
+
+
+    viewer.style.display =
+        "none";
+
+
+    editorHeader.style.display =
+        "none";
+
+
+    welcome.style.display =
+        "flex";
+
+
+    renderFiles();
+
+}
+
+
+// ============================================================
+// FILE TYPES
+// ============================================================
+
+function getExtension(
+    filename
+) {
+
+    if (
+        !filename.includes(".")
+    ) {
+
+        return "";
+
+    }
+
+
+    return filename
+        .toLowerCase()
+        .split(".")
+        .pop();
+
+}
+
+
+function isImageFile(
+    extension
+) {
+
+    return [
+        "png",
+        "jpg",
+        "jpeg",
+        "gif",
+        "webp",
+        "svg",
+        "bmp",
+        "ico"
+    ].includes(
+        extension
+    );
+
+}
+
+
+function isCodeFile(
+    filename
+) {
+
+    const extension =
+        getExtension(
+            filename
+        );
+
+
+    return [
+        "py",
+        "c",
+        "h",
+        "cpp",
+        "cc",
+        "cxx",
+        "java",
+        "js",
+        "jsx",
+        "ts",
+        "tsx",
+        "html",
+        "htm",
+        "css",
+        "json",
+        "xml",
+        "md",
+        "sql",
+        "sh",
+        "bash",
+        "txt"
+    ].includes(
+        extension
+    );
+
+}
+
+
+function getMonacoLanguage(
+    filename
+) {
+
+    const extension =
+        getExtension(
+            filename
+        );
+
+
+    const languages = {
+
+        py:
+            "python",
+
+        c:
+            "c",
+
+        h:
+            "cpp",
+
+        cpp:
+            "cpp",
+
+        cc:
+            "cpp",
+
+        cxx:
+            "cpp",
+
+        java:
+            "java",
+
+        js:
+            "javascript",
+
+        jsx:
+            "javascript",
+
+        ts:
+            "typescript",
+
+        tsx:
+            "typescript",
+
+        html:
+            "html",
+
+        htm:
+            "html",
+
+        css:
+            "css",
+
+        json:
+            "json",
+
+        xml:
+            "xml",
+
+        md:
+            "markdown",
+
+        sql:
+            "sql",
+
+        sh:
+            "shell",
+
+        bash:
+            "shell",
+
+        txt:
+            "plaintext"
+
+    };
+
+
+    return (
+        languages[extension] ||
+        "plaintext"
+    );
+
+}
+
+
+function getViewerType(
+    filename
+) {
+
+    const extension =
+        getExtension(
+            filename
+        );
+
+
+    if (
+        isImageFile(
+            extension
+        )
+    ) {
+
+        return "Image";
+
+    }
+
+
+    if (
+        extension === "pdf"
+    ) {
+
+        return "PDF";
+
+    }
+
+
+    if (
+        extension === "docx"
+    ) {
+
+        return "DOCX";
+
+    }
+
+
+    if (
+        extension === "pptx"
+    ) {
+
+        return "PowerPoint";
+
+    }
+
+
+    if (
+        isCodeFile(
+            filename
+        )
+    ) {
+
+        return getMonacoLanguage(
+            filename
+        );
+
+    }
+
+
+    return "File";
+
+}
+
+
+// ============================================================
+// ICONS
+// ============================================================
+
+function getFileIcon(
+    filename
+) {
+
+    const extension =
+        getExtension(
+            filename
+        );
+
+
+    const icons = {
+
+        py: "🐍",
+
+        c: "C",
+
+        h: "C",
+
+        cpp: "C++",
+
+        cc: "C++",
+
+        cxx: "C++",
+
+        java: "☕",
+
+        js: "JS",
+
+        jsx: "JS",
+
+        ts: "TS",
+
+        tsx: "TS",
+
+        html: "◇",
+
+        css: "#",
+
+        json: "{}",
+
+        pdf: "PDF",
+
+        docx: "W",
+
+        pptx: "P",
+
+        png: "IMG",
+
+        jpg: "IMG",
+
+        jpeg: "IMG",
+
+        gif: "IMG",
+
+        webp: "IMG",
+
+        svg: "IMG",
+
+        md: "M",
+
+        txt: "T"
+
+    };
+
+
+    return (
+        icons[extension] ||
+        "•"
+    );
+
+}
+
+
+// ============================================================
+// TAB
+// ============================================================
+
+function updateTab() {
+
+    if (
+        !currentFile
+    ) {
+
+        return;
+
+    }
+
+
+    fileTab.textContent =
+        isDirty
+        ? "● " +
+          currentFile.filename
+        : currentFile.filename;
+
+
+    languageElement.textContent =
+        getViewerType(
+            currentFile.filename
+        );
+
+}
+
+
+// ============================================================
+// ESCAPE HTML
+// ============================================================
+
+function escapeHTML(
+    value
+) {
+
+    return value
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
+}
+
+
+// ============================================================
+// UNSAVED WARNING
+// ============================================================
+
+window.addEventListener(
+    "beforeunload",
+    function(event) {
+
+        if (
+            isDirty
+        ) {
+
+            event.preventDefault();
+
+            event.returnValue =
+                "";
+
+        }
+
+    }
+);
+
+</script>
+
+
+</body>
+
+</html>
