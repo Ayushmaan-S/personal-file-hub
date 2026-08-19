@@ -1,64 +1,86 @@
 import os
+from datetime import datetime, timedelta, timezone
 
-from dotenv import load_dotenv
-from passlib.context import CryptContext
+import bcrypt
 from jose import jwt
-from datetime import datetime, timedelta
+from dotenv import load_dotenv
 
 load_dotenv()
 
+SECRET_KEY = os.getenv("SECRET_KEY")
 
-# Password hashing
-pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto"
-)
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY is not set")
 
-
-# JWT settings
-SECRET_KEY = os.getenv("JWT_SECRET")
 ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
 
-def hash_password(password: str):
-    return pwd_context.hash(password)
+# =========================
+# PASSWORD FUNCTIONS
+# =========================
 
+def hash_password(password: str) -> str:
+    password_bytes = password.encode("utf-8")
 
-def verify_password(password: str, password_hash: str):
-    return pwd_context.verify(
-        password,
-        password_hash
+    # bcrypt only supports passwords up to 72 bytes
+    if len(password_bytes) > 72:
+        raise ValueError("Password cannot be longer than 72 bytes")
+
+    hashed = bcrypt.hashpw(
+        password_bytes,
+        bcrypt.gensalt()
     )
 
+    return hashed.decode("utf-8")
 
-def create_token(user_id: int):
 
-    expire = datetime.utcnow() + timedelta(days=7)
+def verify_password(password: str, password_hash: str) -> bool:
+    password_bytes = password.encode("utf-8")
 
-    data = {
+    # bcrypt limit
+    if len(password_bytes) > 72:
+        return False
+
+    try:
+        return bcrypt.checkpw(
+            password_bytes,
+            password_hash.encode("utf-8")
+        )
+    except (ValueError, TypeError):
+        return False
+
+
+# =========================
+# JWT FUNCTIONS
+# =========================
+
+def create_token(user_id: int) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(
+        minutes=ACCESS_TOKEN_EXPIRE_MINUTES
+    )
+
+    payload = {
         "user_id": user_id,
         "exp": expire
     }
 
     return jwt.encode(
-        data,
+        payload,
         SECRET_KEY,
         algorithm=ALGORITHM
     )
 
 
 def verify_token(token: str):
-
     try:
-
-        data = jwt.decode(
+        payload = jwt.decode(
             token,
             SECRET_KEY,
             algorithms=[ALGORITHM]
         )
 
-        return data
+        return payload
 
     except Exception:
-
         return None
