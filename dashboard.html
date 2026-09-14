@@ -15,7 +15,7 @@ button{border:0;cursor:pointer;border-radius:6px;padding:7px 12px;font-size:12px
 button:disabled{opacity:.5;cursor:default}
 .app{width:100%;height:100%;display:flex;flex-direction:column}
 .topbar{height:52px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 14px;background:#171a21;border-bottom:1px solid #292d36}
-.brand{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:600}.brand-logo{width:32px;height:32px;object-fit:contain;display:block;border-radius:8px;filter:drop-shadow(0 0 10px rgba(57,216,232,.18))}
+.brand{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:600}
 .brand-icon{font-size:19px}.top-actions{display:flex;gap:7px}
 .secondary-button{background:#292e38;color:#dfe3ea}.secondary-button:hover{background:#353b47}
 .primary-button{background:white;color:#111318;font-weight:600}.primary-button:hover{background:#ddd}
@@ -39,7 +39,7 @@ button:disabled{opacity:.5;cursor:default}
 .file-tab{height:100%;display:flex;align-items:center;padding:0 15px;color:#d9dde4;font-family:Consolas,"Courier New",monospace;font-size:12px}
 .editor-actions{display:flex;gap:6px;padding-right:9px}
 .welcome{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#727a87}
-.welcome-icon{font-size:45px;opacity:.5;margin-bottom:15px}.welcome-title{color:#d7dbe2;font-size:22px;margin-bottom:8px}.welcome-text{text-align:center;font-size:12px;line-height:1.8}
+.welcome-icon{width:96px;height:96px;display:flex;align-items:center;justify-content:center;margin-bottom:15px;opacity:.95}.welcome-icon img{width:96px;height:96px;object-fit:contain;display:block}.welcome-title{color:#d7dbe2;font-size:22px;margin-bottom:8px}.welcome-text{text-align:center;font-size:12px;line-height:1.8}
 #editor{flex:1;min-height:0;width:100%}#viewer{flex:1;min-height:0;width:100%;overflow:auto;display:none;background:#111318}
 .image-viewer{width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:auto;padding:30px}.image-viewer img{max-width:100%;max-height:100%;object-fit:contain;border-radius:5px;box-shadow:0 10px 40px rgba(0,0,0,.4)}
 .pdf-viewer{width:100%;height:100%;display:flex;justify-content:center;background:#525659;overflow:auto;padding:20px}.pdf-frame{width:100%;height:100%;border:0;background:white}
@@ -57,7 +57,7 @@ button:disabled{opacity:.5;cursor:default}
 <body>
 <div class="app">
 <header class="topbar">
-<div class="brand"><img class="brand-logo" src="assets/miku-logo.png" alt="Personal File Hub logo"><span>Personal File Hub</span></div>
+<div class="brand"><span class="brand-icon">☁</span>Personal File Hub</div>
 <div class="top-actions">
 <button class="secondary-button" id="newFolderButton">＋ Folder</button>
 <button class="secondary-button" id="uploadButton">↑ Upload</button>
@@ -96,7 +96,7 @@ button:disabled{opacity:.5;cursor:default}
 </div>
 
 <div class="welcome" id="welcome">
-<div class="welcome-icon">◇</div>
+<div class="welcome-icon"><img src="assets/personal-file-hub-logo.png" alt="Personal File Hub logo"></div>
 <div class="welcome-title">Personal File Hub</div>
 <div class="welcome-text">
 Select a file to open it.<br>
