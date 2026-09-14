@@ -122,6 +122,7 @@ Images, PDFs and documents use dedicated viewers.
 <button id="contextOpen">Open</button>
 <button id="contextRename">Rename</button>
 <button id="contextDownload">Download</button>
+<button id="contextMove">Move to...</button>
 <button class="delete-option" id="contextDelete">Delete</button>
 </div>
 
@@ -132,6 +133,17 @@ Images, PDFs and documents use dedicated viewers.
 <div class="modal-actions">
 <button class="secondary-button" id="modalCancel">Cancel</button>
 <button class="primary-button" id="modalConfirm">Create</button>
+</div>
+</div>
+</div>
+
+<div class="modal-overlay" id="moveModal">
+<div class="modal move-modal">
+<h3>Move file to</h3>
+<select id="moveFolderSelect" style="width:100%;padding:9px;background:#171a20;border:1px solid #383e49;border-radius:5px;color:white;outline:none"></select>
+<div class="modal-actions">
+<button class="secondary-button" id="moveCancel">Cancel</button>
+<button class="primary-button" id="moveConfirm">Move</button>
 </div>
 </div>
 </div>
@@ -156,6 +168,7 @@ const modalConfirm=$("modalConfirm"), modalCancel=$("modalCancel");
 
 let monacoEditor=null,currentFile=null,currentFiles=[],currentFolders=[];
 let contextItem=null,currentFolderId=null,currentPath=[];
+let moveTargetFile=null;
 let isDirty=false,currentObjectURL=null,modalMode="create-folder";
 
 function authHeaders(extra={}){return {...extra,Authorization:"Bearer "+token}}
@@ -415,12 +428,77 @@ modalConfirm.onclick=async()=>{
 
 renameButton.onclick=()=>currentFile&&openNameModal("rename",{type:"file",data:currentFile});
 
+async function openMoveModal(file){
+    moveTargetFile=file;
+    hideContextMenu();
+    const select=$("moveFolderSelect");
+    select.innerHTML='<option value="">☁ Home</option>';
+    $("moveModal").style.display="flex";
+    statusElement.textContent="Loading folders...";
+    try{
+        const r=await fetch(apiUrl("/folders/all"),{headers:authHeaders()});
+        if(handleAuth(r))return;
+        const d=await r.json();
+        if(!r.ok)throw new Error(d.detail||"Could not load folders");
+        const folders=d.folders||[];
+        const byParent={};
+        folders.forEach(f=>{const key=f.parent_id===null?"root":String(f.parent_id);(byParent[key] ||= []).push(f)});
+        function addOptions(parentId,depth){
+            const key=parentId===null?"root":String(parentId);
+            (byParent[key]||[]).sort((a,b)=>a.name.localeCompare(b.name)).forEach(f=>{
+                const option=document.createElement("option");
+                option.value=f.id;
+                option.textContent="  ".repeat(depth)+"📁 "+f.name;
+                select.appendChild(option);
+                addOptions(f.id,depth+1);
+            });
+        }
+        addOptions(null,0);
+        if(file.folder_id!==null && file.folder_id!==undefined)select.value=String(file.folder_id);
+        statusElement.textContent="Choose destination";
+    }catch(e){
+        $("moveModal").style.display="none";
+        moveTargetFile=null;
+        alert(e.message);
+    }
+}
+
+function closeMoveModal(){
+    $("moveModal").style.display="none";
+    moveTargetFile=null;
+}
+
+$("moveCancel").onclick=closeMoveModal;
+$("moveConfirm").onclick=async()=>{
+    if(!moveTargetFile)return;
+    const folderValue=$("moveFolderSelect").value;
+    const folderId=folderValue===""?null:Number(folderValue);
+    try{
+        $("moveConfirm").disabled=true;
+        statusElement.textContent="Moving...";
+        const r=await fetch(apiUrl("/files/"+moveTargetFile.id+"/move"),{
+            method:"PUT",
+            headers:authHeaders({"Content-Type":"application/json"}),
+            body:JSON.stringify({folder_id:folderId})
+        });
+        if(handleAuth(r))return;
+        const d=await r.json();
+        if(!r.ok)throw new Error(d.detail||"Move failed");
+        if(currentFile&&currentFile.id===moveTargetFile.id)closeCurrentFile();
+        closeMoveModal();
+        await loadFolder();
+        statusElement.textContent="File moved";
+    }catch(e){alert(e.message);statusElement.textContent="Move failed"}
+    finally{$("moveConfirm").disabled=false}
+};
+
 function showContextMenu(obj,isFolder,x,y){
     contextItem={type:isFolder?"folder":"file",data:obj};
     contextMenu.style.display="block";
     contextMenu.style.left=Math.min(x,window.innerWidth-170)+"px";
     contextMenu.style.top=Math.min(y,window.innerHeight-160)+"px";
     $("contextDownload").style.display=isFolder?"none":"block";
+    $("contextMove").style.display=isFolder?"none":"block";
 }
 function hideContextMenu(){contextMenu.style.display="none"}
 document.addEventListener("click",hideContextMenu);
@@ -431,6 +509,10 @@ $("contextOpen").onclick=async e=>{
 };
 $("contextRename").onclick=e=>{
     e.stopPropagation();if(contextItem)openNameModal("rename",contextItem);hideContextMenu();
+};
+$("contextMove").onclick=e=>{
+    e.stopPropagation();
+    if(contextItem&&contextItem.type==="file")openMoveModal(contextItem.data);
 };
 $("contextDownload").onclick=e=>{
     e.stopPropagation();if(contextItem&&contextItem.type==="file")downloadFile(contextItem.data);hideContextMenu();
