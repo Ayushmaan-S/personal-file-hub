@@ -76,6 +76,10 @@ class RenameFolderRequest(BaseModel):
     name: str
 
 
+class MoveFileRequest(BaseModel):
+    folder_id: int | None = None
+
+
 def clean_name(name: str) -> str:
     name = name.strip()
     if not name:
@@ -147,6 +151,20 @@ async def list_folders(
 
     result = query.order("name", desc=False).execute()
 
+    return {"success": True, "folders": result.data}
+
+
+@app.get("/folders/all")
+async def list_all_folders(
+    user_id: int = Depends(get_current_user)
+):
+    result = (
+        supabase.table("folders")
+        .select("id,user_id,name,parent_id,created_at,updated_at")
+        .eq("user_id", user_id)
+        .order("name", desc=False)
+        .execute()
+    )
     return {"success": True, "folders": result.data}
 
 
@@ -648,6 +666,46 @@ async def upload_file(
         "success": True,
         "message": "File uploaded successfully",
         "file": saved_file
+    }
+
+
+# ============================================================
+# MOVE FILE
+# ============================================================
+
+@app.put("/files/{file_id}/move")
+async def move_file(
+    file_id: int,
+    request: MoveFileRequest,
+    user_id: int = Depends(get_current_user)
+):
+    # The file must belong to the logged-in user.
+    result = (
+        supabase.table("files")
+        .select("id,folder_id")
+        .eq("id", file_id)
+        .eq("user_id", user_id)
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    # None means the root/Home folder. Otherwise make sure the
+    # destination folder belongs to this same user.
+    verify_folder(request.folder_id, user_id)
+
+    updated = (
+        supabase.table("files")
+        .update({"folder_id": request.folder_id})
+        .eq("id", file_id)
+        .eq("user_id", user_id)
+        .execute()
+    )
+
+    return {
+        "success": True,
+        "message": "File moved successfully",
+        "file": updated.data[0] if updated.data else None
     }
 
 
