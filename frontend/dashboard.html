@@ -15,7 +15,7 @@ button{border:0;cursor:pointer;border-radius:6px;padding:7px 12px;font-size:12px
 button:disabled{opacity:.5;cursor:default}
 .app{width:100%;height:100%;display:flex;flex-direction:column}
 .topbar{height:52px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 14px;background:#171a21;border-bottom:1px solid #292d36}
-.brand{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:600}
+.brand{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:600}.brand-logo{width:32px;height:32px;object-fit:contain;display:block;border-radius:8px;filter:drop-shadow(0 0 10px rgba(57,216,232,.18))}
 .brand-icon{font-size:19px}.top-actions{display:flex;gap:7px}
 .secondary-button{background:#292e38;color:#dfe3ea}.secondary-button:hover{background:#353b47}
 .primary-button{background:white;color:#111318;font-weight:600}.primary-button:hover{background:#ddd}
@@ -57,7 +57,7 @@ button:disabled{opacity:.5;cursor:default}
 <body>
 <div class="app">
 <header class="topbar">
-<div class="brand"><span class="brand-icon">☁</span>Personal File Hub</div>
+<div class="brand"><img class="brand-logo" src="https://lh3.googleusercontent.com/rd-d/ALs6j_GbyzHwqXtJO1n5cHc7y0_yCmJkgcERxhrrxK549rEdBtCdULXGtwRSbRyZfcaTlqpS4aVEWl3ls7f3lJHwJ_tIyRfUMX5Av2duTkZUNufAs_D_M-6Q9mQS6uvGA4thE30Pv_Tx3Lhn_Xqqz8sclM8vChIY6bKc8dQXHE0kzm3tw9uoudlDSD9jyGurCfkRPIL73VvqIqRenTBDlxL01sUY1UZ3uRuAsM7srKblttYNGXZDMwBd6bb6AoWoZhCyRmzDpRknX9hUthkgMHKKw6YjxGlSrwrFyNRaFdPIiKzr35I437ePZzjuT88BP3lYWMFjC-nnB3mtsTBtZ6by0_0hZTHd-i8p7aIAnDvqM3uzOJWgQNSxSxzRpMjt5nM-dIiF8T3hmVQifcxM5ugNssI1SQr6fDB2NH3aC_BAE2KHUU5qfq2WcX5r06rLcD9OvaHUgYAP7F4TyQygafJ_p3YlXv_Vw8DKenP6-GAp-s-raiDfAHJAaLD1Tz38cER3PZtD7dfiVNf0fvxNnM1399Y19cZ4j6aqQaVW4yGoy1ri_MvkhskQFZKAp2_59waqdtFXe1iBpd1k5T1ItJZzF58ArfV3S2PsrZ05evieiOtsEWDFAMDE2KHUU5qfq2WcX5r06rLcD9OvaHUgYAP7F4TyQygafJ_p3YlXv_Vw8DKenP6-GAp-s-raiDfAHJAaLDy?auditContext=forDisplay" alt="Personal File Hub logo"><span>Personal File Hub</span></div>
 <div class="top-actions">
 <button class="secondary-button" id="newFolderButton">＋ Folder</button>
 <button class="secondary-button" id="uploadButton">↑ Upload</button>
