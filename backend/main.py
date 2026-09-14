@@ -333,6 +333,21 @@ async def list_files(
     return {"success": True, "files": result.data}
 
 
+@app.get("/files/all")
+async def list_all_files(
+    user_id: int = Depends(get_current_user)
+):
+    """Return every file owned by the current user for the explorer tree."""
+    result = (
+        supabase.table("files")
+        .select("id,user_id,filename,size,storage_path,created_at,folder_id")
+        .eq("user_id", user_id)
+        .order("filename", desc=False)
+        .execute()
+    )
+    return {"success": True, "files": result.data}
+
+
 # ============================================================
 # GET FOLDER PATH / BREADCRUMBS
 # ============================================================
