@@ -50,7 +50,7 @@ button:disabled{opacity:.5;cursor:default}
 .context-menu button{width:100%;display:block;text-align:left;background:transparent;color:#d8dce3;padding:8px 10px;border-radius:4px}.context-menu button:hover{background:#363c47}.context-menu .delete-option{color:#ff9ca6}
 .modal-overlay{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.65)}
 .modal{width:350px;padding:20px;background:#20242b;border:1px solid #363c46;border-radius:9px}.modal h3{margin:0 0 15px;font-size:16px}.modal input{width:100%;padding:9px;background:#171a20;border:1px solid #383e49;border-radius:5px;color:white;outline:none}.modal-actions{display:flex;justify-content:flex-end;gap:7px;margin-top:16px}
-.tree-picker{max-height:360px;overflow:auto;padding:5px;background:#171a20;border:1px solid #383e49;border-radius:6px}.tree-row{display:flex;align-items:center;gap:3px;min-height:30px;color:#cbd0d8;border-radius:4px;cursor:pointer;user-select:none;font-size:12px}.tree-row:hover{background:#252b34}.tree-row.selected{background:#343b47;color:white}.tree-toggle{width:22px;height:24px;padding:0;background:transparent;color:#8e97a5;font-size:13px}.tree-toggle:hover{background:#303641;color:white}.tree-spacer{width:22px;flex-shrink:0}.tree-label{flex:1;padding:5px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tree-children{display:none}.tree-children.open{display:block}.move-current{margin:0 0 9px;color:#7f8794;font-size:10px}
+.tree-picker{max-height:360px;overflow:auto;padding:5px;background:#171a20;border:1px solid #383e49;border-radius:6px}.tree-row{display:flex;align-items:center;gap:3px;min-height:30px;color:#cbd0d8;border-radius:4px;cursor:pointer;user-select:none;font-size:12px}.tree-row:hover{background:#252b34}.tree-row.selected{background:#343b47;color:white}.tree-toggle{width:22px;height:24px;padding:0;background:transparent;color:#8e97a5;font-size:13px;display:flex;align-items:center;justify-content:center}.tree-toggle:hover{background:#303641;color:white}.tree-chevron{display:inline-block;font-family:Arial,sans-serif;font-size:15px;line-height:1;transform:rotate(0deg);transition:transform .16s ease}.tree-chevron.open{transform:rotate(90deg)}.tree-spacer{width:22px;flex-shrink:0}.tree-label{flex:1;padding:5px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tree-children{display:none}.tree-children.open{display:block}.explorer-tree{padding:5px 0}.explorer-tree .tree-row{min-height:31px}.explorer-tree .tree-label{font-family:Consolas,"Courier New",monospace;font-size:12px}.explorer-tree .tree-file .tree-label{color:#bfc5cf}.explorer-tree .tree-file:hover .tree-label{color:white}.move-current{margin:0 0 9px;color:#7f8794;font-size:10px}
 @media(max-width:700px){.sidebar{width:220px}}
 </style>
 </head>
@@ -170,6 +170,7 @@ const nameInput=$("nameInput"), modalTitle=$("modalTitle");
 const modalConfirm=$("modalConfirm"), modalCancel=$("modalCancel");
 
 let monacoEditor=null,currentFile=null,currentFiles=[],currentFolders=[];
+let explorerFiles=[],explorerFolders=[],expandedFolderIds=new Set(["__root__"]);
 let contextItem=null,currentFolderId=null,currentPath=[];
 let moveTargetFile=null,destinationMode="move",destinationFolderId=null;
 let isDirty=false,currentObjectURL=null,modalMode="create-folder";
@@ -219,6 +220,20 @@ require(["vs/editor/editor.main"],function(){
     loadFolder();
 });
 
+async function loadExplorerTree(){
+    const [fr,rr]=await Promise.all([
+        fetch(apiUrl("/files/all"),{headers:authHeaders()}),
+        fetch(apiUrl("/folders/all"),{headers:authHeaders()})
+    ]);
+    if(handleAuth(fr)||handleAuth(rr))return;
+    const fd=await fr.json(),rd=await rr.json();
+    if(!fr.ok)throw new Error(fd.detail||"Could not load explorer files");
+    if(!rr.ok)throw new Error(rd.detail||"Could not load explorer folders");
+    explorerFiles=fd.files||[];
+    explorerFolders=rd.folders||[];
+    renderExplorerTree();
+}
+
 async function loadFolder(){
     try{
         fileList.innerHTML='<div class="empty-files">Loading...</div>';
@@ -232,7 +247,8 @@ async function loadFolder(){
         if(!fr.ok)throw new Error(fd.detail||"Could not load files");
         if(!rr.ok)throw new Error(rd.detail||"Could not load folders");
         currentFiles=fd.files||[];currentFolders=rd.folders||[];
-        renderBreadcrumbs();renderFiles();
+        renderBreadcrumbs();
+        await loadExplorerTree();
         statusElement.textContent=(currentFolders.length+currentFiles.length)+" item(s)";
     }catch(e){
         console.error(e);fileList.innerHTML='<div class="empty-files">Could not load files.</div>';
@@ -269,35 +285,131 @@ async function renderBreadcrumbs(){
 }
 
 function renderFiles(){
+    renderExplorerTree();
+}
+
+function renderExplorerTree(){
     const search=searchInput.value.trim().toLowerCase();
     fileList.innerHTML="";
-    const folders=currentFolders.filter(f=>f.name.toLowerCase().includes(search));
-    const files=currentFiles.filter(f=>f.filename.toLowerCase().includes(search));
+    fileList.classList.add("explorer-tree");
 
-    if(!folders.length&&!files.length){
-        fileList.innerHTML='<div class="empty-files">'+(search?"No matching items.":"This folder is empty.")+"</div>";return;
+    const foldersByParent={};
+    const filesByFolder={};
+    explorerFolders.forEach(f=>{
+        const key=f.parent_id===null?"root":String(f.parent_id);
+        (foldersByParent[key] ||= []).push(f);
+    });
+    explorerFiles.forEach(f=>{
+        const key=f.folder_id===null?"root":String(f.folder_id);
+        (filesByFolder[key] ||= []).push(f);
+    });
+    Object.values(foldersByParent).forEach(list=>list.sort((a,b)=>a.name.localeCompare(b.name)));
+    Object.values(filesByFolder).forEach(list=>list.sort((a,b)=>a.filename.localeCompare(b.filename)));
+
+    currentPath.forEach(f=>expandedFolderIds.add(f.id));
+
+    const homeRow=document.createElement("div");
+    homeRow.className="tree-row"+(currentFolderId===null?" selected":"");
+    homeRow.style.paddingLeft="2px";
+    const rootFolders=foldersByParent.root||[],rootFiles=filesByFolder.root||[];
+    const rootHasChildren=rootFolders.length||rootFiles.length;
+    const homeToggle=document.createElement("button");homeToggle.className="tree-toggle";
+    const homeChevron=document.createElement("span");
+    homeChevron.className="tree-chevron"+(expandedFolderIds.has("__root__")?" open":"");
+    homeChevron.textContent=rootHasChildren?">":"";
+    homeToggle.appendChild(homeChevron);
+    const homeLabel=document.createElement("div");homeLabel.className="tree-label";homeLabel.textContent="☁ Home";
+    homeRow.append(homeToggle,homeLabel);
+    homeRow.onclick=()=>{if(currentFolderId!==null)goHome()};
+    homeToggle.onclick=e=>{
+        e.stopPropagation();
+        if(rootHasChildren)toggleExplorerFolder("__root__",homeChevron,homeChildren);
+    };
+    fileList.appendChild(homeRow);
+
+    const homeChildren=document.createElement("div");
+    homeChildren.className="tree-children"+(expandedFolderIds.has("__root__")?" open":"");
+    rootFolders.forEach(f=>addExplorerFolder(f,homeChildren,0,foldersByParent,filesByFolder,search));
+    rootFiles.filter(f=>matchesTreeSearch(f,search)).forEach(f=>addExplorerFile(f,homeChildren,0));
+    fileList.appendChild(homeChildren);
+
+    if(search && !homeChildren.querySelector(".tree-row")){
+        fileList.innerHTML='<div class="empty-files">No matching items.</div>';
     }
-
-    folders.forEach(folder=>{
-        const item=makeItem(folder,true);
-        fileList.appendChild(item);
-    });
-    files.forEach(file=>{
-        const item=makeItem(file,false);
-        if(currentFile&&currentFile.id===file.id)item.classList.add("active");
-        fileList.appendChild(item);
-    });
 }
+
+function matchesTreeSearch(obj,search){
+    if(!search)return true;
+    const name=obj.filename||obj.name||"";
+    return name.toLowerCase().includes(search);
+}
+
+function folderHasSearchMatch(folder,foldersByParent,filesByFolder,search){
+    if(matchesTreeSearch(folder,search))return true;
+    const children=foldersByParent[String(folder.id)]||[];
+    if(children.some(f=>folderHasSearchMatch(f,foldersByParent,filesByFolder,search)))return true;
+    return (filesByFolder[String(folder.id)]||[]).some(f=>matchesTreeSearch(f,search));
+}
+
+function addExplorerFolder(folder,parentEl,depth,foldersByParent,filesByFolder,search){
+    if(search && !folderHasSearchMatch(folder,foldersByParent,filesByFolder,search))return;
+    if(search)expandedFolderIds.add(folder.id);
+    const wrapper=document.createElement("div");
+    const row=document.createElement("div");
+    row.className="tree-row"+(currentFolderId===folder.id?" selected":"");
+    row.style.paddingLeft=(depth*18+2)+"px";
+
+    const childFolders=foldersByParent[String(folder.id)]||[];
+    const childFiles=filesByFolder[String(folder.id)]||[];
+    const hasChildren=childFolders.length||childFiles.length;
+    const toggle=document.createElement("button");toggle.className="tree-toggle";
+    const chevron=document.createElement("span");
+    chevron.className="tree-chevron"+(expandedFolderIds.has(folder.id)?" open":"");
+    chevron.textContent=hasChildren?">":"";
+    toggle.appendChild(chevron);
+
+    const label=document.createElement("div");label.className="tree-label";label.textContent="📁 "+folder.name;
+    row.append(toggle,label);
+    row.onclick=()=>openFolder(folder);
+    row.oncontextmenu=e=>{e.preventDefault();showContextMenu(folder,true,e.clientX,e.clientY)};
+    wrapper.appendChild(row);
+
+    const childBox=document.createElement("div");
+    childBox.className="tree-children"+(expandedFolderIds.has(folder.id)?" open":"");
+    if(hasChildren){
+        toggle.title="Expand/collapse";
+        toggle.onclick=e=>{e.stopPropagation();toggleExplorerFolder(folder.id,chevron,childBox)};
+    }
+    childFolders.forEach(child=>addExplorerFolder(child,childBox,depth+1,foldersByParent,filesByFolder,search));
+    childFiles.filter(f=>matchesTreeSearch(f,search)).forEach(f=>addExplorerFile(f,childBox,depth+1));
+    wrapper.appendChild(childBox);
+    parentEl.appendChild(wrapper);
+}
+
+function addExplorerFile(file,parentEl,depth){
+    const row=document.createElement("div");
+    row.className="tree-row tree-file"+(currentFile&&currentFile.id===file.id?" selected":"");
+    row.style.paddingLeft=(depth*18+2)+"px";
+    const spacer=document.createElement("span");spacer.className="tree-spacer";
+    const icon=document.createElement("div");icon.className="file-icon";icon.textContent=getFileIcon(file.filename);
+    const label=document.createElement("div");label.className="tree-label";label.textContent=file.filename;
+    row.append(spacer,icon,label);
+    row.onclick=()=>openFile(file);
+    row.ondblclick=()=>openFile(file);
+    row.oncontextmenu=e=>{e.preventDefault();showContextMenu(file,false,e.clientX,e.clientY)};
+    parentEl.appendChild(row);
+}
+
+function toggleExplorerFolder(folderId,chevron,childBox){
+    const open=childBox.classList.toggle("open");
+    if(open)expandedFolderIds.add(folderId);else expandedFolderIds.delete(folderId);
+    chevron.classList.toggle("open",open);
+}
+
 function makeItem(obj,isFolder){
     const item=document.createElement("div");item.className="file-item";
-    const icon=document.createElement("div");icon.className="file-icon";icon.textContent=isFolder?"📁":getFileIcon(obj.filename);
-    const name=document.createElement("div");name.className="file-name";name.textContent=isFolder?obj.name:obj.filename;
-    const menu=document.createElement("button");menu.className="file-menu";menu.textContent="⋮";
-    menu.onclick=e=>{e.stopPropagation();showContextMenu(obj,isFolder,e.clientX,e.clientY)};
-    item.append(icon,name,menu);
+    item.textContent=isFolder?obj.name:obj.filename;
     item.onclick=()=>isFolder?openFolder(obj):openFile(obj);
-    item.ondblclick=()=>isFolder?openFolder(obj):openFile(obj);
-    item.oncontextmenu=e=>{e.preventDefault();showContextMenu(obj,isFolder,e.clientX,e.clientY)};
     return item;
 }
 
@@ -486,10 +598,13 @@ function buildDestinationTree(folders,sourceFolderId){
         const children=byParent[String(folder.id)]||[];
         const toggle=document.createElement("button");
         toggle.className="tree-toggle";
-        toggle.textContent=children.length?"›":"";
+        const chevron=document.createElement("span");
+        chevron.className="tree-chevron"+(destinationFolderId===folder.id||subtreeContains(folder.id,sourceFolderId,foldersCache)?" open":"");
+        chevron.textContent=children.length?">":"";
+        toggle.appendChild(chevron);
         if(children.length){
             toggle.title="Expand/collapse";
-            toggle.onclick=e=>{e.stopPropagation();const childBox=wrapper.querySelector(":scope > .tree-children");const open=childBox.classList.toggle("open");toggle.textContent=open?"⌄":"›"};
+            toggle.onclick=e=>{e.stopPropagation();const childBox=wrapper.querySelector(":scope > .tree-children");const open=childBox.classList.toggle("open");chevron.classList.toggle("open",open)};
         }
         const label=document.createElement("div");label.className="tree-label";label.textContent="📁 "+folder.name;
         row.append(toggle,label);
@@ -506,7 +621,7 @@ function buildDestinationTree(folders,sourceFolderId){
         // Automatically reveal the source/current folder path for a useful preview.
         if(sourceFolderId!==null && subtreeContains(folder.id,sourceFolderId,foldersCache)){
             const childBox=wrapper.querySelector(":scope > .tree-children");
-            if(childBox){childBox.classList.add("open");toggle.textContent="⌄"}
+            if(childBox){childBox.classList.add("open");chevron.classList.add("open")}
         }
     }
 
@@ -604,7 +719,7 @@ $("contextDelete").onclick=async e=>{
     hideContextMenu();
 };
 
-searchInput.oninput=renderFiles;
+searchInput.oninput=renderExplorerTree;
 refreshButton.onclick=loadFolder;
 logoutButton.onclick=logout;
 function logout(){localStorage.removeItem("token");window.location.href="index.html"}
