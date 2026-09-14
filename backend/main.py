@@ -710,6 +710,86 @@ async def move_file(
 
 
 # ============================================================
+# COPY FILE
+# ============================================================
+
+@app.post("/files/{file_id}/copy")
+async def copy_file(
+    file_id: int,
+    request: MoveFileRequest,
+    user_id: int = Depends(get_current_user)
+):
+    # The source file must belong to the logged-in user.
+    result = (
+        supabase.table("files")
+        .select("*")
+        .eq("id", file_id)
+        .eq("user_id", user_id)
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    source = result.data[0]
+
+    # None means Home/root. Otherwise make sure the destination folder
+    # belongs to this same user.
+    verify_folder(request.folder_id, user_id)
+
+    new_storage_path = f"{user_id}/{uuid.uuid4()}_{source['filename']}"
+
+    try:
+        # Download the source from Storage and upload a new independent copy.
+        # The original file is never changed.
+        file_bytes = (
+            supabase.storage
+            .from_(BUCKET_NAME)
+            .download(source["storage_path"])
+        )
+
+        content_type = mimetypes.guess_type(source["filename"])[0] or "application/octet-stream"
+
+        supabase.storage.from_(BUCKET_NAME).upload(
+            new_storage_path,
+            file_bytes,
+            {"content-type": content_type, "upsert": "false"}
+        )
+    except Exception as e:
+        print("Storage copy error:", e)
+        try:
+            supabase.storage.from_(BUCKET_NAME).remove([new_storage_path])
+        except Exception:
+            pass
+        raise HTTPException(status_code=500, detail="Could not copy file")
+
+    try:
+        copied = (
+            supabase.table("files")
+            .insert({
+                "user_id": user_id,
+                "filename": source["filename"],
+                "storage_path": new_storage_path,
+                "size": source.get("size", len(file_bytes)),
+                "folder_id": request.folder_id
+            })
+            .execute()
+        )
+    except Exception as e:
+        print("Database copy error:", e)
+        try:
+            supabase.storage.from_(BUCKET_NAME).remove([new_storage_path])
+        except Exception:
+            pass
+        raise HTTPException(status_code=500, detail="Could not save copied file information")
+
+    return {
+        "success": True,
+        "message": "File copied successfully",
+        "file": copied.data[0] if copied.data else None
+    }
+
+
+# ============================================================
 # DOWNLOAD
 # ============================================================
 
