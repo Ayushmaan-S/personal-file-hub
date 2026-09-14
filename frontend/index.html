@@ -12,6 +12,8 @@
 
     <title>Personal File Hub - Login</title>
 
+    <link rel="icon" type="image/png" href="assets/personal-file-hub-logo.png">
+
 
     <style>
 
@@ -40,6 +42,20 @@
                 Arial,
                 Helvetica,
                 sans-serif;
+        }
+
+
+.site-logo {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 14px;
+        }
+
+        .site-logo img {
+            width: min(250px, 100%);
+            height: auto;
+            display: block;
+            object-fit: contain;
         }
 
 
@@ -174,7 +190,34 @@
             font-size: 14px;
         }
 
-    </style>
+    
+/* MIKU THEME */
+:root {
+  --miku: #39d8e8;
+  --miku-bright: #62e9f5;
+  --miku-soft: #9af3f7;
+  --purple: #a879ff;
+  --purple-bright: #c49cff;
+  --bg: #080b12;
+  --panel: #101522;
+  --panel-2: #151b2a;
+  --border: #253149;
+  --text: #eefcff;
+  --muted: #91a0b8;
+}
+body { background: radial-gradient(circle at 50% 15%, rgba(57,216,232,.10), transparent 32%), radial-gradient(circle at 85% 85%, rgba(168,121,255,.10), transparent 30%), var(--bg); color: var(--text); }
+.login-box { background: rgba(16,21,34,.94); border-color: rgba(57,216,232,.25); box-shadow: 0 24px 70px rgba(0,0,0,.55), 0 0 40px rgba(57,216,232,.08); }
+.site-logo img { filter: drop-shadow(0 12px 28px rgba(57,216,232,.12)); }
+h1 { color: var(--text); }
+.subtitle { color: var(--muted); }
+label { color: #c7d5e8; }
+input { background: #0a0f1a; border-color: #293752; color: var(--text); }
+input:focus { border-color: var(--miku); box-shadow: 0 0 0 3px rgba(57,216,232,.12); }
+button { background: linear-gradient(135deg, var(--miku), #69cfff); color: #061017; box-shadow: 0 8px 24px rgba(57,216,232,.16); }
+button:hover { background: linear-gradient(135deg, var(--miku-bright), #88d9ff); }
+#message { color: var(--muted); }
+
+</style>
 
 </head>
 
@@ -183,6 +226,11 @@
 
 
 <div class="login-box">
+
+
+    <div class="site-logo">
+        <img src="assets/personal-file-hub-logo.png" alt="Personal File Hub logo">
+    </div>
 
 
     <h1>
