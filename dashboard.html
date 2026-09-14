@@ -50,6 +50,7 @@ button:disabled{opacity:.5;cursor:default}
 .context-menu button{width:100%;display:block;text-align:left;background:transparent;color:#d8dce3;padding:8px 10px;border-radius:4px}.context-menu button:hover{background:#363c47}.context-menu .delete-option{color:#ff9ca6}
 .modal-overlay{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.65)}
 .modal{width:350px;padding:20px;background:#20242b;border:1px solid #363c46;border-radius:9px}.modal h3{margin:0 0 15px;font-size:16px}.modal input{width:100%;padding:9px;background:#171a20;border:1px solid #383e49;border-radius:5px;color:white;outline:none}.modal-actions{display:flex;justify-content:flex-end;gap:7px;margin-top:16px}
+.tree-picker{max-height:360px;overflow:auto;padding:5px;background:#171a20;border:1px solid #383e49;border-radius:6px}.tree-row{display:flex;align-items:center;gap:3px;min-height:30px;color:#cbd0d8;border-radius:4px;cursor:pointer;user-select:none;font-size:12px}.tree-row:hover{background:#252b34}.tree-row.selected{background:#343b47;color:white}.tree-toggle{width:22px;height:24px;padding:0;background:transparent;color:#8e97a5;font-size:13px}.tree-toggle:hover{background:#303641;color:white}.tree-spacer{width:22px;flex-shrink:0}.tree-label{flex:1;padding:5px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tree-children{display:none}.tree-children.open{display:block}.move-current{margin:0 0 9px;color:#7f8794;font-size:10px}
 @media(max-width:700px){.sidebar{width:220px}}
 </style>
 </head>
@@ -123,6 +124,7 @@ Images, PDFs and documents use dedicated viewers.
 <button id="contextRename">Rename</button>
 <button id="contextDownload">Download</button>
 <button id="contextMove">Move to...</button>
+<button id="contextCopy">Make a copy</button>
 <button class="delete-option" id="contextDelete">Delete</button>
 </div>
 
@@ -139,8 +141,9 @@ Images, PDFs and documents use dedicated viewers.
 
 <div class="modal-overlay" id="moveModal">
 <div class="modal move-modal">
-<h3>Move file to</h3>
-<select id="moveFolderSelect" style="width:100%;padding:9px;background:#171a20;border:1px solid #383e49;border-radius:5px;color:white;outline:none"></select>
+<h3 id="destinationModalTitle">Move file to</h3>
+<div class="move-current" id="destinationCurrent"></div>
+<div class="tree-picker" id="destinationTree"></div>
 <div class="modal-actions">
 <button class="secondary-button" id="moveCancel">Cancel</button>
 <button class="primary-button" id="moveConfirm">Move</button>
@@ -168,7 +171,7 @@ const modalConfirm=$("modalConfirm"), modalCancel=$("modalCancel");
 
 let monacoEditor=null,currentFile=null,currentFiles=[],currentFolders=[];
 let contextItem=null,currentFolderId=null,currentPath=[];
-let moveTargetFile=null;
+let moveTargetFile=null,destinationMode="move",destinationFolderId=null;
 let isDirty=false,currentObjectURL=null,modalMode="create-folder";
 
 function authHeaders(extra={}){return {...extra,Authorization:"Bearer "+token}}
@@ -428,67 +431,132 @@ modalConfirm.onclick=async()=>{
 
 renameButton.onclick=()=>currentFile&&openNameModal("rename",{type:"file",data:currentFile});
 
-async function openMoveModal(file){
+async function openDestinationModal(file,mode){
     moveTargetFile=file;
+    destinationMode=mode;
+    destinationFolderId=file.folder_id===undefined?null:file.folder_id;
     hideContextMenu();
-    const select=$("moveFolderSelect");
-    select.innerHTML='<option value="">☁ Home</option>';
-    $("moveModal").style.display="flex";
+    const modal=$("moveModal");
+    const title=$("destinationModalTitle");
+    const confirm=$("moveConfirm");
+    title.textContent=mode==="copy"?"Copy file to":"Move file to";
+    confirm.textContent=mode==="copy"?"Copy":"Move";
+    $("destinationCurrent").textContent="Choose a destination for "+file.filename;
+    $("destinationTree").innerHTML='<div class="empty-files">Loading folders...</div>';
+    modal.style.display="flex";
     statusElement.textContent="Loading folders...";
     try{
         const r=await fetch(apiUrl("/folders/all"),{headers:authHeaders()});
         if(handleAuth(r))return;
         const d=await r.json();
         if(!r.ok)throw new Error(d.detail||"Could not load folders");
-        const folders=d.folders||[];
-        const byParent={};
-        folders.forEach(f=>{const key=f.parent_id===null?"root":String(f.parent_id);(byParent[key] ||= []).push(f)});
-        function addOptions(parentId,depth){
-            const key=parentId===null?"root":String(parentId);
-            (byParent[key]||[]).sort((a,b)=>a.name.localeCompare(b.name)).forEach(f=>{
-                const option=document.createElement("option");
-                option.value=f.id;
-                option.textContent="  ".repeat(depth)+"📁 "+f.name;
-                select.appendChild(option);
-                addOptions(f.id,depth+1);
-            });
-        }
-        addOptions(null,0);
-        if(file.folder_id!==null && file.folder_id!==undefined)select.value=String(file.folder_id);
+        buildDestinationTree(d.folders||[],file.folder_id);
         statusElement.textContent="Choose destination";
     }catch(e){
-        $("moveModal").style.display="none";
-        moveTargetFile=null;
+        closeMoveModal();
         alert(e.message);
     }
 }
 
+function buildDestinationTree(folders,sourceFolderId){
+    const tree=$("destinationTree");
+    tree.innerHTML="";
+    const byParent={};
+    folders.forEach(f=>{
+        const key=f.parent_id===null?"root":String(f.parent_id);
+        (byParent[key] ||= []).push(f);
+    });
+    Object.values(byParent).forEach(list=>list.sort((a,b)=>a.name.localeCompare(b.name)));
+
+    const homeRow=document.createElement("div");
+    homeRow.className="tree-row"+(destinationFolderId===null?" selected":"");
+    const homeToggle=document.createElement("button");
+    homeToggle.className="tree-toggle";homeToggle.textContent="";
+    const homeLabel=document.createElement("div");homeLabel.className="tree-label";homeLabel.textContent="☁ Home";
+    homeRow.append(homeToggle,homeLabel);
+    homeRow.onclick=()=>selectDestination(null,homeRow);
+    tree.appendChild(homeRow);
+
+    function addFolder(folder,parentEl,depth){
+        const wrapper=document.createElement("div");
+        const row=document.createElement("div");
+        row.className="tree-row"+(destinationFolderId===folder.id?" selected":"");
+        row.style.paddingLeft=(depth*18)+"px";
+
+        const children=byParent[String(folder.id)]||[];
+        const toggle=document.createElement("button");
+        toggle.className="tree-toggle";
+        toggle.textContent=children.length?"›":"";
+        if(children.length){
+            toggle.title="Expand/collapse";
+            toggle.onclick=e=>{e.stopPropagation();const childBox=wrapper.querySelector(":scope > .tree-children");const open=childBox.classList.toggle("open");toggle.textContent=open?"⌄":"›"};
+        }
+        const label=document.createElement("div");label.className="tree-label";label.textContent="📁 "+folder.name;
+        row.append(toggle,label);
+        row.onclick=()=>selectDestination(folder.id,row);
+        wrapper.appendChild(row);
+
+        if(children.length){
+            const childBox=document.createElement("div");childBox.className="tree-children";
+            children.forEach(child=>addFolder(child,childBox,depth+1));
+            wrapper.appendChild(childBox);
+        }
+        parentEl.appendChild(wrapper);
+
+        // Automatically reveal the source/current folder path for a useful preview.
+        if(sourceFolderId!==null && subtreeContains(folder.id,sourceFolderId,foldersCache)){
+            const childBox=wrapper.querySelector(":scope > .tree-children");
+            if(childBox){childBox.classList.add("open");toggle.textContent="⌄"}
+        }
+    }
+
+    foldersCache=folders;
+    (byParent.root||[]).forEach(f=>addFolder(f,tree,0));
+}
+let foldersCache=[];
+function subtreeContains(folderId,targetId,folders){
+    if(folderId===targetId)return true;
+    let current=folders.find(f=>f.id===targetId);
+    for(let i=0;i<100&&current;i++){
+        if(current.parent_id===folderId)return true;
+        if(current.parent_id===null)return false;
+        current=folders.find(f=>f.id===current.parent_id);
+    }
+    return false;
+}
+function selectDestination(folderId,row){
+    destinationFolderId=folderId;
+    document.querySelectorAll("#destinationTree .tree-row.selected").forEach(x=>x.classList.remove("selected"));
+    row.classList.add("selected");
+}
 function closeMoveModal(){
     $("moveModal").style.display="none";
     moveTargetFile=null;
+    destinationFolderId=null;
+    destinationMode="move";
 }
 
 $("moveCancel").onclick=closeMoveModal;
 $("moveConfirm").onclick=async()=>{
     if(!moveTargetFile)return;
-    const folderValue=$("moveFolderSelect").value;
-    const folderId=folderValue===""?null:Number(folderValue);
+    const file=moveTargetFile;
+    const mode=destinationMode;
+    const folderId=destinationFolderId;
     try{
         $("moveConfirm").disabled=true;
-        statusElement.textContent="Moving...";
-        const r=await fetch(apiUrl("/files/"+moveTargetFile.id+"/move"),{
-            method:"PUT",
+        statusElement.textContent=mode==="copy"?"Copying...":"Moving...";
+        const r=await fetch(apiUrl("/files/"+file.id+(mode==="copy"?"/copy":"/move")),{
+            method:mode==="copy"?"POST":"PUT",
             headers:authHeaders({"Content-Type":"application/json"}),
             body:JSON.stringify({folder_id:folderId})
         });
         if(handleAuth(r))return;
         const d=await r.json();
-        if(!r.ok)throw new Error(d.detail||"Move failed");
-        if(currentFile&&currentFile.id===moveTargetFile.id)closeCurrentFile();
+        if(!r.ok)throw new Error(d.detail||(mode==="copy"?"Copy failed":"Move failed"));
         closeMoveModal();
         await loadFolder();
-        statusElement.textContent="File moved";
-    }catch(e){alert(e.message);statusElement.textContent="Move failed"}
+        statusElement.textContent=mode==="copy"?"File copied":"File moved";
+    }catch(e){alert(e.message);statusElement.textContent=mode==="copy"?"Copy failed":"Move failed"}
     finally{$("moveConfirm").disabled=false}
 };
 
@@ -499,6 +567,7 @@ function showContextMenu(obj,isFolder,x,y){
     contextMenu.style.top=Math.min(y,window.innerHeight-160)+"px";
     $("contextDownload").style.display=isFolder?"none":"block";
     $("contextMove").style.display=isFolder?"none":"block";
+    $("contextCopy").style.display=isFolder?"none":"block";
 }
 function hideContextMenu(){contextMenu.style.display="none"}
 document.addEventListener("click",hideContextMenu);
@@ -512,7 +581,11 @@ $("contextRename").onclick=e=>{
 };
 $("contextMove").onclick=e=>{
     e.stopPropagation();
-    if(contextItem&&contextItem.type==="file")openMoveModal(contextItem.data);
+    if(contextItem&&contextItem.type==="file")openDestinationModal(contextItem.data,"move");
+};
+$("contextCopy").onclick=e=>{
+    e.stopPropagation();
+    if(contextItem&&contextItem.type==="file")openDestinationModal(contextItem.data,"copy");
 };
 $("contextDownload").onclick=e=>{
     e.stopPropagation();if(contextItem&&contextItem.type==="file")downloadFile(contextItem.data);hideContextMenu();
